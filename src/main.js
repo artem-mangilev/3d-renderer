@@ -1,6 +1,6 @@
 import { Canvas } from "./canvas.js"
 import { Color } from "./color.js"
-import { intersectRaySphere } from "./math.js";
+import { intersectRaySphere, numberVectorProduct, sumVectors, vector, vectorDotProduct, vectorLength, vectorNumberDivision } from "./math.js";
 
 const canvas = new Canvas(
   document.getElementById('canvas')
@@ -27,8 +27,64 @@ const spheres = [
     center: [-2, 0, 4],
     radius: 1,
     color: { red: 0, green: 255, blue: 0 }
+  },
+  {
+    center: [0, -5001, 0],
+    radius: 5000,
+    color: { red: 255, green: 255, blue: 0 }
   }
 ]
+
+/**
+ * @type {(AmbientLight | PointLight | DirectionalLight)[]}
+ */
+const lights = [
+  {
+    type: 'ambient',
+    intensity: 0.2
+  }, 
+  {
+    type: 'point',
+    intensity: 0.6,
+    position: [2, 1, 0]
+  },
+  {
+    type: 'directional',
+    intensity: 0.2,
+    direction: [1, 4, 4]
+  }
+]
+
+/**
+ * compute lighting for point
+ * 
+ * @param {I3DVector} point
+ * @param {I3DVector} normal 
+ */
+function computeLighting(point, normal) {
+  let lightingLevel = 0
+
+  for (const light of lights) {
+    if (light.type === 'ambient') {
+      lightingLevel += light.intensity
+    } else {
+      let lightDirection
+
+      if (light.type === 'point') {
+        lightDirection = vector(light.position, point)
+      } else {
+        lightDirection = light.direction
+      }
+
+      const normalDotLightDirection = vectorDotProduct(normal, lightDirection)
+      if (normalDotLightDirection > 0) {
+        lightingLevel += (light.intensity * normalDotLightDirection) / (vectorLength(normal) * vectorLength(lightDirection))
+      }
+    }
+  }
+
+  return lightingLevel
+}
 
 /**
  * Traces ray
@@ -61,7 +117,11 @@ function traceRay(origin, direction, tMin, tMax) {
     return { red: 255, green: 255, blue: 255 }
   }
 
-  return closestSphere.color
+  const intersectionPoint = sumVectors(origin, numberVectorProduct(closestT, direction))
+  let normal = vector(intersectionPoint, closestSphere.center)
+  normal = vectorNumberDivision(normal, vectorLength(normal)) // cant understand why we should normalize, without this line result the same
+
+  return Color.multiply(closestSphere.color, computeLighting(intersectionPoint, normal))
 }
 
 /**
