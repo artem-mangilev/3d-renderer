@@ -10,6 +10,7 @@
  * @prop {I3DVector} center
  * @prop {number} radius
  * @prop {IColor} color
+ * @prop {number} specular
  * 
  * @typedef {'ambient' | 'point' | 'directional'} LightType
  * 

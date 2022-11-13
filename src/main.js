@@ -16,22 +16,26 @@ const spheres = [
   {
     center: [0, -1, 3],
     radius: 1,
-    color: { red: 255, green: 0, blue: 0 }
+    color: { red: 255, green: 0, blue: 0 },
+    specular: 500
   },
   {
     center: [2, 0, 4],
     radius: 1,
-    color: { red: 0, green: 0, blue: 255 }
+    color: { red: 0, green: 0, blue: 255 },
+    specular: 500
   },
   {
     center: [-2, 0, 4],
     radius: 1,
-    color: { red: 0, green: 255, blue: 0 }
+    color: { red: 0, green: 255, blue: 0 },
+    specular: 10
   },
   {
     center: [0, -5001, 0],
     radius: 5000,
-    color: { red: 255, green: 255, blue: 0 }
+    color: { red: 255, green: 255, blue: 0 },
+    specular: 1000
   }
 ]
 
@@ -50,7 +54,7 @@ const lights = [
   },
   {
     type: 'directional',
-    intensity: 0.2,
+    intensity: 0.6,
     direction: [1, 4, 4]
   }
 ]
@@ -60,8 +64,10 @@ const lights = [
  * 
  * @param {I3DVector} point
  * @param {I3DVector} normal 
+ * @param {I3DVector} view vector from object to camera
+ * @param {number} specular shineness of object
  */
-function computeLighting(point, normal) {
+function computeLighting(point, normal, view, specular) {
   let lightingLevel = 0
 
   for (const light of lights) {
@@ -76,9 +82,28 @@ function computeLighting(point, normal) {
         lightDirection = light.direction
       }
 
+      // diffuse
       const normalDotLightDirection = vectorDotProduct(normal, lightDirection)
       if (normalDotLightDirection > 0) {
         lightingLevel += (light.intensity * normalDotLightDirection) / (vectorLength(normal) * vectorLength(lightDirection))
+      }
+
+      // specular
+      if (specular !== -1) {
+        const reflectionVector = sumVectors(
+          numberVectorProduct(
+            vectorDotProduct(normal, lightDirection),
+            numberVectorProduct(2, normal)
+          ),
+          numberVectorProduct(-1, lightDirection)
+        )
+
+        const reflectionDotView = vectorDotProduct(reflectionVector, view)
+
+        if (reflectionDotView > 0) {
+          lightingLevel += 
+            light.intensity * Math.pow(reflectionDotView / (vectorLength(reflectionVector) * vectorLength(view)), specular)
+        }
       }
     }
   }
@@ -121,7 +146,15 @@ function traceRay(origin, direction, tMin, tMax) {
   let normal = vector(intersectionPoint, closestSphere.center)
   normal = vectorNumberDivision(normal, vectorLength(normal)) // cant understand why we should normalize, without this line result the same
 
-  return Color.multiply(closestSphere.color, computeLighting(intersectionPoint, normal))
+  return Color.multiply(
+    closestSphere.color, 
+    computeLighting(
+      intersectionPoint, 
+      normal, 
+      numberVectorProduct(-1, direction), 
+      closestSphere.specular
+    )
+  )
 }
 
 /**
