@@ -1,6 +1,6 @@
 import { Canvas } from "./canvas.js"
 import { Color } from "./color.js"
-import { intersectRaySphere, numberVectorProduct, sumVectors, vector, vectorDotProduct, vectorLength, vectorNumberDivision } from "./math.js";
+import { closestIntersection, intersectRaySphere, numberVectorProduct, sumVectors, vector, vectorDotProduct, vectorLength, vectorNumberDivision } from "./math.js";
 
 const canvas = new Canvas(
   document.getElementById('canvas')
@@ -75,11 +75,19 @@ function computeLighting(point, normal, view, specular) {
       lightingLevel += light.intensity
     } else {
       let lightDirection
+      let tMax
 
       if (light.type === 'point') {
         lightDirection = vector(light.position, point)
+        tMax = 1
       } else {
         lightDirection = light.direction
+        tMax = Infinity
+      }
+
+      const [shadowSphere] = closestIntersection(spheres, point, lightDirection, 0.001, tMax)
+      if (shadowSphere) {
+        continue
       }
 
       // diffuse
@@ -121,22 +129,7 @@ function computeLighting(point, normal, view, specular) {
  * @returns {IColor}
  */
 function traceRay(origin, direction, tMin, tMax) {
-  let closestT = Infinity
-  let closestSphere = null
-
-  for (const sphere of spheres) {
-    const [t1, t2] = intersectRaySphere(origin, direction, sphere)
-
-    if ((t1 > tMin && t1 < tMax) && t1 < closestT) {
-      closestT = t1
-      closestSphere = sphere
-    }
-
-    if ((t2 > tMin && t2 < tMax) && t2 < closestT) {
-      closestT = t2
-      closestSphere = sphere
-    }
-  }
+  const [closestSphere, closestT] = closestIntersection(spheres, origin, direction, tMin, tMax)
 
   if (closestSphere === null) {
     return { red: 255, green: 255, blue: 255 }

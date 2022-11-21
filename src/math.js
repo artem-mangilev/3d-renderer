@@ -105,3 +105,34 @@ export function intersectRaySphere(origin, direction, sphere) {
     (-b - Math.sqrt(discriminant)) / (2 * a),
   ]
 }
+
+/**
+ * Get closest intersection
+ * 
+ * @param {ISphere[]} spheres 
+ * @param {I3DVector} origin 
+ * @param {I3DVector} direction 
+ * @param {number} tMin 
+ * @param {number} tMax 
+ * @returns {[ISphere, number]} closest sphere and t
+ */
+export function closestIntersection(spheres, origin, direction, tMin, tMax) {
+  let closestT = Infinity
+  let closestSphere = null
+
+  for (const sphere of spheres) {
+    const [t1, t2] = intersectRaySphere(origin, direction, sphere)
+
+    if ((t1 > tMin && t1 < tMax) && t1 < closestT) {
+      closestT = t1
+      closestSphere = sphere
+    }
+
+    if ((t2 > tMin && t2 < tMax) && t2 < closestT) {
+      closestT = t2
+      closestSphere = sphere
+    }
+  }
+
+  return [closestSphere, closestT]
+}
