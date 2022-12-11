@@ -11,6 +11,7 @@
  * @prop {number} radius
  * @prop {IColor} color
  * @prop {number} specular
+ * @prop {number} reflective
  * 
  * @typedef {'ambient' | 'point' | 'directional'} LightType
  * 
